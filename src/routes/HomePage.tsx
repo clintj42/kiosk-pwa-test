@@ -1,4 +1,4 @@
-import PWABadge from "../PWABadge";
+import PWABadge from "../components/PWABadge";
 
 export const HomePage = () => {
   return (
