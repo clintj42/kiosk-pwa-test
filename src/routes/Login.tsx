@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import * as faceapi from "face-api.js";
 import type { TNetInput } from "face-api.js";
@@ -40,6 +40,18 @@ const accounts = [
 
 export type Account = (typeof accounts)[0];
 
+// List of all model files that need to be cached
+const MODEL_FILES = [
+  "/models/ssd_mobilenetv1_model-weights_manifest.json",
+  "/models/ssd_mobilenetv1_model-shard1",
+  "/models/ssd_mobilenetv1_model-shard2",
+  "/models/face_landmark_68_model-weights_manifest.json",
+  "/models/face_landmark_68_model-shard1",
+  "/models/face_recognition_model-weights_manifest.json",
+  "/models/face_recognition_model-shard1",
+  "/models/face_recognition_model-shard2",
+] as const;
+
 export const Login = () => {
   const [tempAccount, setTempAccount] = useState<Account | null>(null);
   const [localUserStream, setLocalUserStream] = useState<MediaStream | null>(
@@ -63,14 +75,55 @@ export const Login = () => {
 
   const MATCH_THRESHOLD = 0.6;
 
-  const loadModels = async () => {
-    // const uri = import.meta.env.DEV ? "/models" : "/react-face-auth/models";
+  // Pre-cache all model files to Cache API
+  const cacheModelFiles = useCallback(async () => {
+    if (!("caches" in window)) {
+      console.warn("Cache API not supported");
+      return;
+    }
+
+    try {
+      const cache = await caches.open("face-api-models");
+
+      // Check which files are already cached and cache missing ones
+      const cachePromises = [];
+      for (const file of MODEL_FILES) {
+        const cached = await cache.match(file);
+        if (!cached) {
+          // Cache each file individually to avoid failing all if one fails
+          cachePromises.push(
+            cache.add(file).catch((err) => {
+              console.warn(`Failed to cache ${file}:`, err);
+              // Continue caching other files even if one fails
+            })
+          );
+        }
+      }
+
+      if (cachePromises.length > 0) {
+        console.log(`Caching ${cachePromises.length} model files...`);
+        await Promise.allSettled(cachePromises);
+        console.log("Model files caching completed");
+      } else {
+        console.log("All model files already cached");
+      }
+    } catch (error) {
+      console.warn("Failed to open cache:", error);
+    }
+  }, []);
+
+  const loadModels = useCallback(async () => {
     const uri = "/models";
 
+    // Pre-cache model files (this will be quick if already cached)
+    await cacheModelFiles();
+
+    // Load models - they will use cached versions if available
     await faceapi.nets.ssdMobilenetv1.loadFromUri(uri);
     await faceapi.nets.faceLandmark68Net.loadFromUri(uri);
     await faceapi.nets.faceRecognitionNet.loadFromUri(uri);
-  };
+    console.log("Models loaded successfully");
+  }, [cacheModelFiles]);
 
   useEffect(() => {
     loadModels()
@@ -83,7 +136,7 @@ export const Login = () => {
         console.error("Error loading models or images:", err);
         setImageError(true);
       });
-  }, []);
+  }, [loadModels]);
 
   useEffect(() => {
     if (loginResult === "SUCCESS" && tempAccount) {
