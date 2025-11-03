@@ -75,7 +75,7 @@ export const Login = () => {
 
   const MATCH_THRESHOLD = 0.6;
 
-  // Pre-cache all model files to Cache API
+  // Pre-cache all model files and user images to Cache API
   const cacheModelFiles = useCallback(async () => {
     if (!("caches" in window)) {
       console.warn("Cache API not supported");
@@ -83,29 +83,48 @@ export const Login = () => {
     }
 
     try {
-      const cache = await caches.open("face-api-models");
+      const modelsCache = await caches.open("face-api-models");
+      const imagesCache = await caches.open("user-profile-images");
 
-      // Check which files are already cached and cache missing ones
-      const cachePromises = [];
+      // Cache model files
+      const modelCachePromises = [];
       for (const file of MODEL_FILES) {
-        const cached = await cache.match(file);
+        const cached = await modelsCache.match(file);
         if (!cached) {
-          // Cache each file individually to avoid failing all if one fails
-          cachePromises.push(
-            cache.add(file).catch((err) => {
+          modelCachePromises.push(
+            modelsCache.add(file).catch((err) => {
               console.warn(`Failed to cache ${file}:`, err);
-              // Continue caching other files even if one fails
             })
           );
         }
       }
 
-      if (cachePromises.length > 0) {
-        console.log(`Caching ${cachePromises.length} model files...`);
-        await Promise.allSettled(cachePromises);
-        console.log("Model files caching completed");
+      // Cache user profile images
+      const imageCachePromises = [];
+      for (const account of accounts) {
+        const picturePath = account.picture.startsWith("/")
+          ? account.picture.substring(1)
+          : account.picture;
+        const imgPath = `/temp-accounts/${picturePath}`;
+        const cached = await imagesCache.match(imgPath);
+        if (!cached) {
+          imageCachePromises.push(
+            imagesCache.add(imgPath).catch((err) => {
+              console.warn(`Failed to cache image ${imgPath}:`, err);
+            })
+          );
+        }
+      }
+
+      const allPromises = [...modelCachePromises, ...imageCachePromises];
+      if (allPromises.length > 0) {
+        console.log(
+          `Caching ${modelCachePromises.length} model files and ${imageCachePromises.length} user images...`
+        );
+        await Promise.allSettled(allPromises);
+        console.log("Caching completed");
       } else {
-        console.log("All model files already cached");
+        console.log("All files already cached");
       }
     } catch (error) {
       console.warn("Failed to open cache:", error);

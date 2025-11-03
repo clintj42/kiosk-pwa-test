@@ -40,6 +40,17 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /\/temp-accounts\/.*/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "user-profile-images",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
         ],
       },
 
