@@ -4,39 +4,7 @@ import * as faceapi from "face-api.js";
 import type { TNetInput } from "face-api.js";
 import AuthIdle from "../assets/images/auth-idle.svg";
 import AuthFace from "../assets/images/auth-face.svg";
-
-const accounts = [
-  {
-    id: "374ed1e4-481b-4074-a26e-6137657c6e35",
-    fullName: "Bilal Gümüş",
-    picture: "374ed1e4-481b-4074-a26e-6137657c6e35/1.jpg",
-  },
-  {
-    id: "43332f46-89a4-435c-880e-4d72bb51149a",
-    fullName: "Andrew Clark",
-    picture: "43332f46-89a4-435c-880e-4d72bb51149a/1.jpg",
-  },
-  {
-    id: "b8476d8d-bd7e-405f-aa66-9a22a9727930",
-    fullName: "Amelia Miller",
-    picture: "/b8476d8d-bd7e-405f-aa66-9a22a9727930/1.jpg",
-  },
-  {
-    id: "88421e2c-ca7a-4332-815f-6e12824e2d05",
-    fullName: "Sophia Smith",
-    picture: "/88421e2c-ca7a-4332-815f-6e12824e2d05/1.jpg",
-  },
-  {
-    id: "0c2f5599-9296-4f94-97d5-e773043188ae",
-    fullName: "Emily Martinez",
-    picture: "/0c2f5599-9296-4f94-97d5-e773043188ae/1.jpg",
-  },
-  {
-    id: "0c2f5599-9296-4f94-97d5-e773043188af",
-    fullName: "Clint Johnson",
-    picture: "/0c2f5599-9296-4f94-97d5-e773043188af/1.jpg",
-  },
-];
+import { accounts } from "./loginAccounts";
 
 export type Account = (typeof accounts)[0];
 
